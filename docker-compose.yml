@@ -1,0 +1,17 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: service-booking-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_DEBUG: "1"
+    volumes:
+      - .:/app
+      - backend-media:/app/media
+
+volumes:
+  backend-media:
+

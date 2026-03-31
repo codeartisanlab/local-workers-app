@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Service Booking",
+    "slug": "service-booking-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#f4f1ea"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#f4f1ea"
+      },
+      "package": "com.anonymous.servicebookingmobile"
+    }
+  }
+}

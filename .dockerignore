@@ -1,0 +1,14 @@
+.git
+.pytest_cache
+.venv
+.python-packages
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+._*
+.coverage
+db.sqlite3
+media
+mobile-app/node_modules

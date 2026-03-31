@@ -1,0 +1,896 @@
+{
+  "info": {
+    "_postman_id": "d26b1c4a-8f3f-4bc0-9158-6ac3a66d9d14",
+    "name": "Service Booking API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for the Django Service Booking backend. Includes auth, booking, worker, and verification APIs with response validation scripts and variable capture."
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "customer_phone",
+      "value": "9000000001"
+    },
+    {
+      "key": "worker_phone",
+      "value": "9000000002"
+    },
+    {
+      "key": "admin_phone",
+      "value": "9000000009"
+    },
+    {
+      "key": "customer_role",
+      "value": "customer"
+    },
+    {
+      "key": "worker_role",
+      "value": "worker"
+    },
+    {
+      "key": "customer_otp",
+      "value": ""
+    },
+    {
+      "key": "worker_otp",
+      "value": ""
+    },
+    {
+      "key": "admin_otp",
+      "value": ""
+    },
+    {
+      "key": "customer_access_token",
+      "value": ""
+    },
+    {
+      "key": "customer_refresh_token",
+      "value": ""
+    },
+    {
+      "key": "worker_access_token",
+      "value": ""
+    },
+    {
+      "key": "worker_refresh_token",
+      "value": ""
+    },
+    {
+      "key": "admin_access_token",
+      "value": ""
+    },
+    {
+      "key": "service_id",
+      "value": "1"
+    },
+    {
+      "key": "booking_id",
+      "value": ""
+    },
+    {
+      "key": "notification_id",
+      "value": ""
+    },
+    {
+      "key": "worker_profile_id",
+      "value": "1"
+    },
+    {
+      "key": "booking_location",
+      "value": "221B Baker Street"
+    },
+    {
+      "key": "booking_time",
+      "value": "2026-03-30T10:00:00Z"
+    },
+    {
+      "key": "latitude",
+      "value": "12.9716"
+    },
+    {
+      "key": "longitude",
+      "value": "77.5946"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Request OTP - Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const data = pm.response.json();",
+                  "",
+                  "pm.test('OTP response shape is valid', function () {",
+                  "  pm.expect(data).to.have.property('message');",
+                  "  pm.expect(data).to.have.property('phone', pm.collectionVariables.get('customer_phone'));",
+                  "  pm.expect(data).to.have.property('otp');",
+                  "  pm.expect(data.otp).to.match(/^\\d{6}$/);",
+                  "  pm.expect(data).to.have.property('expires_at');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('customer_otp', data.otp);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{customer_phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/request-otp/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "request-otp",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify OTP - Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const data = pm.response.json();",
+                  "",
+                  "pm.test('Customer tokens are returned', function () {",
+                  "  pm.expect(data).to.have.property('access');",
+                  "  pm.expect(data).to.have.property('refresh');",
+                  "  pm.expect(data).to.have.property('user');",
+                  "  pm.expect(data.user.role).to.eql('customer');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('customer_access_token', data.access);",
+                  "pm.collectionVariables.set('customer_refresh_token', data.refresh);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{customer_phone}}\",\n  \"otp\": \"{{customer_otp}}\",\n  \"role\": \"{{customer_role}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify-otp/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-otp",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Request OTP - Worker",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Worker OTP is present', function () {",
+                  "  pm.expect(data.phone).to.eql(pm.collectionVariables.get('worker_phone'));",
+                  "  pm.expect(data.otp).to.match(/^\\d{6}$/);",
+                  "});",
+                  "pm.collectionVariables.set('worker_otp', data.otp);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{worker_phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/request-otp/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "request-otp",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify OTP - Worker",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Worker auth response is valid', function () {",
+                  "  pm.expect(data.user.role).to.eql('worker');",
+                  "  pm.expect(data.access).to.be.a('string');",
+                  "  pm.expect(data.refresh).to.be.a('string');",
+                  "});",
+                  "pm.collectionVariables.set('worker_access_token', data.access);",
+                  "pm.collectionVariables.set('worker_refresh_token', data.refresh);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{worker_phone}}\",\n  \"otp\": \"{{worker_otp}}\",\n  \"role\": \"{{worker_role}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify-otp/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-otp",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Request OTP - Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('admin_otp', data.otp);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{admin_phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/request-otp/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "request-otp",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify OTP - Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('admin_access_token', data.access);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{admin_phone}}\",\n  \"otp\": \"{{admin_otp}}\",\n  \"role\": \"customer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify-otp/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-otp",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking",
+      "item": [
+        {
+          "name": "List Services",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Services response is an array', function () {",
+                  "  pm.expect(data).to.be.an('array');",
+                  "});",
+                  "if (Array.isArray(data) && data.length > 0) {",
+                  "  pm.collectionVariables.set('service_id', data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/services/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "services",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Booking response is valid', function () {",
+                  "  pm.expect(data).to.have.property('id');",
+                  "  pm.expect(data).to.have.property('status', 'pending');",
+                  "  pm.expect(data).to.have.property('worker');",
+                  "  pm.expect(data.worker).to.eql(null);",
+                  "  pm.expect(data).to.have.property('notified_workers_count');",
+                  "});",
+                  "pm.collectionVariables.set('booking_id', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"service_id\": {{service_id}},\n  \"location\": \"{{booking_location}}\",\n  \"latitude\": {{latitude}},\n  \"longitude\": {{longitude}},\n  \"time\": \"{{booking_time}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/bookings/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Booking - Invalid Payload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Validation errors are returned', function () {",
+                  "  pm.expect(data).to.have.property('service_id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer_access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"location\": \"{{booking_location}}\",\n  \"latitude\": {{latitude}},\n  \"longitude\": {{longitude}},\n  \"time\": \"{{booking_time}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/bookings/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Worker",
+      "item": [
+        {
+          "name": "Nearby Workers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Nearby workers response is an array', function () {",
+                  "  pm.expect(data).to.be.an('array');",
+                  "});",
+                  "if (Array.isArray(data) && data.length > 0) {",
+                  "  pm.collectionVariables.set('worker_profile_id', data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/workers/nearby/?latitude={{latitude}}&longitude={{longitude}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "workers",
+                "nearby",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "latitude",
+                  "value": "{{latitude}}"
+                },
+                {
+                  "key": "longitude",
+                  "value": "{{longitude}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Worker Jobs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Worker jobs response is an array', function () {",
+                  "  pm.expect(data).to.be.an('array');",
+                  "});",
+                  "if (Array.isArray(data) && data.length > 0) {",
+                  "  pm.collectionVariables.set('notification_id', data[0].id);",
+                  "  pm.collectionVariables.set('booking_id', data[0].booking.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{worker_access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/worker/jobs/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "worker",
+                "jobs",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Accept Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Accepted notification response is valid', function () {",
+                  "  pm.expect(data).to.have.property('id');",
+                  "  pm.expect(data).to.have.property('status', 'accepted');",
+                  "  pm.expect(data).to.have.property('booking');",
+                  "  pm.expect(data.booking).to.have.property('worker');",
+                  "  pm.expect(data.booking.worker).to.have.property('role', 'worker');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{worker_access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notification_id\": {{notification_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/bookings/accept/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "accept",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reject Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Rejected notification response is valid', function () {",
+                  "  pm.expect(data).to.have.property('status', 'rejected');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{worker_access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notification_id\": {{notification_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/bookings/reject/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "reject",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Aadhaar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Upload response contains verification fields', function () {",
+                  "  pm.expect(data).to.have.property('aadhaar_image');",
+                  "  pm.expect(data).to.have.property('verification_status', 'pending');",
+                  "});",
+                  "pm.collectionVariables.set('worker_profile_id', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{worker_access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "aadhaar_image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/worker/verification/upload/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "worker",
+                "verification",
+                "upload",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Approve Worker Verification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Worker verification is approved', function () {",
+                  "  pm.expect(data).to.have.property('verification_status', 'approved');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"verification_status\": \"approved\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/workers/{{worker_profile_id}}/verification/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "workers",
+                "{{worker_profile_id}}",
+                "verification",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
