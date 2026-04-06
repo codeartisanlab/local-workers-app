@@ -14,10 +14,12 @@ from .models import (
     BookingNotification,
     PhoneOTP,
     Service,
+    SubService,
     User,
     WorkerPortfolioImage,
     WorkerProfile,
     WorkerReview,
+    WorkerService,
 )
 
 
@@ -27,10 +29,27 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ["id", "phone", "role"]
 
 
+class SubServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubService
+        fields = ["id", "name"]
+
+
 class WorkerPortfolioImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = WorkerPortfolioImage
         fields = ["id", "image_url", "caption", "created_at"]
+
+    def get_image_url(self, obj):
+        request = self.context.get("request")
+        if obj.image:
+            url = obj.image.url
+            if request:
+                return request.build_absolute_uri(url)
+            return url
+        return obj.image_url
 
 
 class WorkerReviewSerializer(serializers.ModelSerializer):
@@ -51,6 +70,8 @@ class WorkerProfileSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "user",
+            "full_name",
+            "bio",
             "skills",
             "rating",
             "verification_status",
@@ -58,6 +79,9 @@ class WorkerProfileSerializer(serializers.ModelSerializer):
             "latitude",
             "longitude",
             "aadhaar_image",
+            "is_available",
+            "work_start_time",
+            "work_end_time",
             "distance_km",
             "portfolio_images",
             "reviews",
@@ -67,9 +91,9 @@ class WorkerProfileSerializer(serializers.ModelSerializer):
 class WorkerVerificationUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkerProfile
-        fields = ["aadhaar_image"]
+        fields = ["aadhaar_image", "selfie_image"]
 
-    def validate_aadhaar_image(self, file):
+    def _validate_image_file(self, file):
         allowed_extensions = (".jpg", ".jpeg", ".png", ".pdf")
         name = file.name.lower()
         if not name.endswith(allowed_extensions):
@@ -78,10 +102,25 @@ class WorkerVerificationUploadSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("File size must be 5 MB or less.")
         return file
 
+    def validate_aadhaar_image(self, file):
+        return self._validate_image_file(file)
+
+    def validate_selfie_image(self, file):
+        allowed_extensions = (".jpg", ".jpeg", ".png")
+        name = file.name.lower()
+        if not name.endswith(allowed_extensions):
+            raise serializers.ValidationError("Upload a JPG or PNG file.")
+        if file.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("File size must be 5 MB or less.")
+        return file
+
     def update(self, instance, validated_data):
-        instance.aadhaar_image = validated_data["aadhaar_image"]
+        if "aadhaar_image" in validated_data:
+            instance.aadhaar_image = validated_data["aadhaar_image"]
+        if "selfie_image" in validated_data:
+            instance.selfie_image = validated_data["selfie_image"]
         instance.verification_status = WorkerProfile.VerificationStatus.PENDING
-        instance.save(update_fields=["aadhaar_image", "verification_status"])
+        instance.save(update_fields=["aadhaar_image", "selfie_image", "verification_status"])
         return instance
 
 
@@ -100,6 +139,63 @@ class WorkerVerificationAdminSerializer(serializers.ModelSerializer):
         return value
 
 
+class WorkerProfileUpdateSerializer(serializers.ModelSerializer):
+    sub_service_ids = serializers.PrimaryKeyRelatedField(
+        queryset=SubService.objects.all(),
+        many=True,
+        required=False,
+        write_only=True,
+    )
+
+    class Meta:
+        model = WorkerProfile
+        fields = [
+            "full_name",
+            "bio",
+            "skills",
+            "location",
+            "latitude",
+            "longitude",
+            "is_available",
+            "work_start_time",
+            "work_end_time",
+            "sub_service_ids",
+        ]
+
+    def update(self, instance, validated_data):
+        sub_services = validated_data.pop("sub_service_ids", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if sub_services is not None:
+            WorkerService.objects.filter(worker_profile=instance).delete()
+            WorkerService.objects.bulk_create([
+                WorkerService(worker_profile=instance, sub_service=sub)
+                for sub in sub_services
+            ])
+        return instance
+
+
+class WorkerPortfolioUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkerPortfolioImage
+        fields = ["image", "caption"]
+
+    def validate_image(self, file):
+        allowed_extensions = (".jpg", ".jpeg", ".png")
+        name = file.name.lower()
+        if not name.endswith(allowed_extensions):
+            raise serializers.ValidationError("Upload a JPG or PNG file.")
+        if file.size > 10 * 1024 * 1024:
+            raise serializers.ValidationError("File size must be 10 MB or less.")
+        return file
+
+    def create(self, validated_data):
+        return WorkerPortfolioImage.objects.create(
+            worker_profile=self.context["worker_profile"],
+            **validated_data,
+        )
+
 def calculate_distance_km(origin_lat, origin_lon, target_lat, target_lon):
     radius_km = 6371
     lat1 = radians(origin_lat)
@@ -116,9 +212,11 @@ def calculate_distance_km(origin_lat, origin_lon, target_lat, target_lon):
 
 
 class ServiceSerializer(serializers.ModelSerializer):
+    sub_services = SubServiceSerializer(many=True, read_only=True)
+
     class Meta:
         model = Service
-        fields = ["id", "name", "base_price"]
+        fields = ["id", "name", "base_price", "sub_services"]
 
 
 class OTPRequestSerializer(serializers.Serializer):
@@ -185,6 +283,7 @@ class OTPVerifySerializer(serializers.Serializer):
             "refresh": str(refresh),
             "access": str(refresh.access_token),
             "user": UserSerializer(user).data,
+            "created": created,
         }
 
 
@@ -193,20 +292,34 @@ class WorkerProfileDetailsSerializer(serializers.ModelSerializer):
     portfolio_images = WorkerPortfolioImageSerializer(many=True, read_only=True)
     reviews = WorkerReviewSerializer(many=True, read_only=True)
     average_rating = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True, source="rating")
+    sub_services = serializers.SerializerMethodField()
 
     class Meta:
         model = WorkerProfile
         fields = [
             "id",
             "user",
+            "full_name",
+            "bio",
             "skills",
             "location",
             "verification_status",
             "latitude",
             "longitude",
+            "is_available",
+            "work_start_time",
+            "work_end_time",
             "average_rating",
             "portfolio_images",
             "reviews",
+            "sub_services",
+        ]
+
+    def get_sub_services(self, obj):
+        worker_services = obj.worker_services.select_related("sub_service__service").all()
+        return [
+            {"id": ws.sub_service.id, "name": ws.sub_service.name, "service": ws.sub_service.service.name}
+            for ws in worker_services
         ]
 
 
@@ -252,13 +365,23 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             **validated_data,
         )
         nearby_workers = get_nearby_worker_profiles(validated_data["latitude"], validated_data["longitude"])
+        booking_time = validated_data["time"].time()
+        notifiable_workers = []
+        for worker in nearby_workers:
+            profile = worker
+            if profile.work_start_time and profile.work_end_time:
+                if not (profile.work_start_time <= booking_time <= profile.work_end_time):
+                    continue
+            notifiable_workers.append(worker)
+
         notifications = [
             BookingNotification(
                 booking=booking,
                 worker=worker.user,
                 distance_km=Decimal(str(worker.distance_km)),
+                expires_at=timezone.now() + timedelta(minutes=5),
             )
-            for worker in nearby_workers
+            for worker in notifiable_workers
         ]
         BookingNotification.objects.bulk_create(notifications)
         booking.notified_workers_count = len(notifications)
@@ -277,6 +400,7 @@ class BookingNotificationSerializer(serializers.ModelSerializer):
             "worker",
             "status",
             "distance_km",
+            "expires_at",
             "created_at",
             "updated_at",
         ]
@@ -391,6 +515,34 @@ class NearbyWorkerQuerySerializer(serializers.Serializer):
         )
 
 
+class WorkerChatSerializer(serializers.ModelSerializer):
+    service_name = serializers.CharField(source="service.name", read_only=True)
+    customer_phone = serializers.CharField(source="user.phone", read_only=True)
+    last_message = serializers.SerializerMethodField()
+    last_message_at = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Booking
+        fields = [
+            "id",
+            "service_name",
+            "customer_phone",
+            "status",
+            "location",
+            "time",
+            "last_message",
+            "last_message_at",
+        ]
+
+    def get_last_message(self, obj):
+        msg = obj.messages.order_by("-created_at").first()
+        return msg.message if msg else None
+
+    def get_last_message_at(self, obj):
+        msg = obj.messages.order_by("-created_at").first()
+        return msg.created_at.isoformat() if msg else None
+
+
 def get_nearby_worker_profiles(latitude, longitude):
     workers = (
         WorkerProfile.objects.select_related("user")
@@ -399,6 +551,7 @@ def get_nearby_worker_profiles(latitude, longitude):
             latitude__isnull=False,
             longitude__isnull=False,
             verification_status=WorkerProfile.VerificationStatus.APPROVED,
+            is_available=True,
         )
     )
 

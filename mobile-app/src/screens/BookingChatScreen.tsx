@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FlatList, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { PrimaryButton } from "../components/PrimaryButton";
@@ -17,12 +17,29 @@ export function BookingChatScreen({ route }: Props) {
   const [messages, setMessages] = useState<BookingMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [sending, setSending] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastMessageIdRef = useRef<number>(0);
+
+  function loadMessages() {
+    if (!accessToken) return;
+    fetchBookingMessages(accessToken, bookingId).then((fetched) => {
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const newMessages = fetched.filter((m) => !existingIds.has(m.id));
+        if (newMessages.length > 0) {
+          return [...prev, ...newMessages];
+        }
+        return prev.length === 0 ? fetched : prev;
+      });
+    });
+  }
 
   useEffect(() => {
-    if (!accessToken) {
-      return;
-    }
-    fetchBookingMessages(accessToken, bookingId).then(setMessages);
+    loadMessages();
+    pollingRef.current = setInterval(loadMessages, 5000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
   }, [accessToken, bookingId]);
 
   async function handleSend() {
@@ -31,7 +48,11 @@ export function BookingChatScreen({ route }: Props) {
     }
     setSending(true);
     const createdMessage = await sendBookingMessage(accessToken, bookingId, messageText.trim());
-    setMessages((current) => [...current, createdMessage]);
+    setMessages((current) => {
+      const existingIds = new Set(current.map((m) => m.id));
+      if (existingIds.has(createdMessage.id)) return current;
+      return [...current, createdMessage];
+    });
     setMessageText("");
     setSending(false);
   }

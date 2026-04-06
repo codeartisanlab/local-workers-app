@@ -7,10 +7,12 @@ from bookings.models import (
     Booking,
     BookingMessage,
     Service,
+    SubService,
     User,
     WorkerPortfolioImage,
     WorkerProfile,
     WorkerReview,
+    WorkerService,
 )
 
 
@@ -18,20 +20,24 @@ class Command(BaseCommand):
     help = "Seed demo services, workers, and an admin user for local testing."
 
     def handle(self, *args, **options):
-        services = [
-            ("Cleaning", "499.00"),
-            ("Plumbing", "699.00"),
-            ("Electrical", "799.00"),
+        services_config = [
+            ("Cleaning", "499.00", ["Deep Clean", "Regular Clean", "Deep Sanitization"]),
+            ("Plumbing", "699.00", ["Pipe Repair", "Drain Unclog", "Fixture Installation"]),
+            ("Electrical", "799.00", ["Wiring", "Appliance Repair", "Panel Upgrade"]),
         ]
-        for name, base_price in services:
-            Service.objects.get_or_create(name=name, defaults={"base_price": base_price})
+        service_objects = {}
+        for name, base_price, sub_names in services_config:
+            service, _ = Service.objects.get_or_create(name=name, defaults={"base_price": base_price})
+            service_objects[name] = service
+            for sub_name in sub_names:
+                SubService.objects.get_or_create(service=service, name=sub_name)
 
         workers = [
-            ("9000000002", "Cleaning, Deep Sanitization", "Downtown", 12.9716, 77.5946),
-            ("9000000003", "Electrical, Appliance Repair", "MG Road", 12.9721, 77.5990),
-            ("9000000004", "Plumbing", "Richmond Town", 12.9675, 77.6002),
+            ("9000000002", "Cleaning, Deep Sanitization", "Downtown", 12.9716, 77.5946, "Cleaning"),
+            ("9000000003", "Electrical, Appliance Repair", "MG Road", 12.9721, 77.5990, "Electrical"),
+            ("9000000004", "Plumbing", "Richmond Town", 12.9675, 77.6002, "Plumbing"),
         ]
-        for phone, skills, location, latitude, longitude in workers:
+        for phone, skills, location, latitude, longitude, primary_service in workers:
             user, _ = User.objects.get_or_create(phone=phone, defaults={"role": User.Role.WORKER})
             if user.role != User.Role.WORKER:
                 user.role = User.Role.WORKER
@@ -45,8 +51,14 @@ class Command(BaseCommand):
                     "location": location,
                     "latitude": latitude,
                     "longitude": longitude,
+                    "is_available": True,
                 },
             )
+            service_obj = service_objects.get(primary_service)
+            if service_obj:
+                for sub in service_obj.sub_services.all():
+                    WorkerService.objects.get_or_create(worker_profile=profile, sub_service=sub)
+
             WorkerPortfolioImage.objects.get_or_create(
                 worker_profile=profile,
                 image_url=f"https://images.unsplash.com/photo-151{abs(hash(phone)) % 1000000}?auto=format&fit=crop&w=800&q=80",

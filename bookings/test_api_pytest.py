@@ -31,6 +31,7 @@ def worker():
         location="Downtown",
         latitude=12.9716,
         longitude=77.5946,
+        is_available=True,
     )
     return user
 
@@ -46,6 +47,7 @@ def nearby_worker():
         location="MG Road",
         latitude=12.9721,
         longitude=77.5990,
+        is_available=True,
     )
     return user
 
@@ -61,6 +63,7 @@ def rejected_worker():
         location="West End",
         latitude=12.9719,
         longitude=77.5960,
+        is_available=True,
     )
     return user
 
@@ -76,6 +79,7 @@ def far_worker():
         location="Airport",
         latitude=13.1986,
         longitude=77.7066,
+        is_available=True,
     )
     return user
 
@@ -442,3 +446,277 @@ class TestModelStringsAndService:
         assert str(service) == "Cleaning"
         assert "Booking<" in str(pending_booking)
         assert str(notification) == f"BookingNotification<{pending_booking.id}:{worker.id}>"
+
+
+@pytest.mark.django_db
+class TestWorkerMe:
+    def test_worker_can_get_own_profile(self, api_client, worker):
+        authenticate(api_client, worker)
+        response = api_client.get(reverse("worker-me"))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["user"]["id"] == worker.id
+        assert "is_available" in response.data
+        assert "work_start_time" in response.data
+
+    def test_customer_cannot_access_worker_me(self, api_client, customer):
+        authenticate(api_client, customer)
+        response = api_client.get(reverse("worker-me"))
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+class TestWorkerProfileUpdate:
+    def test_worker_can_toggle_availability(self, api_client, worker):
+        authenticate(api_client, worker)
+        response = api_client.patch(
+            reverse("worker-profile-update"),
+            {"is_available": True},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        worker.worker_profile.refresh_from_db()
+        assert worker.worker_profile.is_available is True
+
+    def test_worker_can_set_work_hours(self, api_client, worker):
+        authenticate(api_client, worker)
+        response = api_client.patch(
+            reverse("worker-profile-update"),
+            {"work_start_time": "09:00:00", "work_end_time": "18:00:00"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        worker.worker_profile.refresh_from_db()
+        assert str(worker.worker_profile.work_start_time) == "09:00:00"
+        assert str(worker.worker_profile.work_end_time) == "18:00:00"
+
+    def test_worker_can_update_name_and_bio(self, api_client, worker):
+        authenticate(api_client, worker)
+        response = api_client.patch(
+            reverse("worker-profile-update"),
+            {"full_name": "Aarav Singh", "bio": "Expert cleaner."},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        worker.worker_profile.refresh_from_db()
+        assert worker.worker_profile.full_name == "Aarav Singh"
+        assert worker.worker_profile.bio == "Expert cleaner."
+
+    def test_customer_cannot_update_worker_profile(self, api_client, customer):
+        authenticate(api_client, customer)
+        response = api_client.patch(
+            reverse("worker-profile-update"),
+            {"is_available": True},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+class TestWorkerVerificationSelfie:
+    def test_worker_can_upload_selfie(self, api_client, worker):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        authenticate(api_client, worker)
+        selfie_file = SimpleUploadedFile("selfie.jpg", b"fake-selfie-content", content_type="image/jpeg")
+        response = api_client.post(
+            reverse("worker-verification-upload"),
+            {"selfie_image": selfie_file},
+            format="multipart",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        worker.worker_profile.refresh_from_db()
+        assert worker.worker_profile.selfie_image.name.startswith("selfies/")
+        assert worker.worker_profile.verification_status == WorkerProfile.VerificationStatus.PENDING
+
+    def test_selfie_rejects_invalid_extension(self, api_client, worker):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        authenticate(api_client, worker)
+        bad_file = SimpleUploadedFile("selfie.pdf", b"not-valid", content_type="application/pdf")
+        response = api_client.post(
+            reverse("worker-verification-upload"),
+            {"selfie_image": bad_file},
+            format="multipart",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "selfie_image" in response.data
+
+
+@pytest.mark.django_db
+class TestWorkerPortfolio:
+    def test_worker_can_upload_portfolio_image(self, api_client, worker):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        authenticate(api_client, worker)
+        image_file = SimpleUploadedFile("work.jpg", b"fake-image-content", content_type="image/jpeg")
+        response = api_client.post(
+            reverse("worker-portfolio"),
+            {"image": image_file, "caption": "Kitchen clean"},
+            format="multipart",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["caption"] == "Kitchen clean"
+
+    def test_worker_can_list_portfolio(self, api_client, worker):
+        authenticate(api_client, worker)
+        response = api_client.get(reverse("worker-portfolio"))
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.data, list)
+
+    def test_worker_can_delete_portfolio_image(self, api_client, worker):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from bookings.models import WorkerPortfolioImage
+        profile = worker.worker_profile
+        image_file = SimpleUploadedFile("del.jpg", b"content", content_type="image/jpeg")
+        img = WorkerPortfolioImage.objects.create(worker_profile=profile, caption="To delete", image=image_file)
+        authenticate(api_client, worker)
+        response = api_client.delete(reverse("worker-portfolio-delete", args=[img.id]))
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not WorkerPortfolioImage.objects.filter(pk=img.id).exists()
+
+    def test_customer_cannot_access_portfolio(self, api_client, customer):
+        authenticate(api_client, customer)
+        response = api_client.get(reverse("worker-portfolio"))
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+class TestWorkerChats:
+    def test_worker_can_list_accepted_bookings_as_chats(self, api_client, worker, customer, service):
+        booking = Booking.objects.create(
+            user=customer,
+            worker=worker,
+            service=service,
+            status=Booking.Status.ACCEPTED,
+            price=service.base_price,
+            location="Test Location",
+            latitude=12.9716,
+            longitude=77.5946,
+            time=timezone.now() + timedelta(days=1),
+        )
+        authenticate(api_client, worker)
+        response = api_client.get(reverse("worker-chats"))
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+        assert response.data[0]["id"] == booking.id
+
+    def test_customer_cannot_access_worker_chats(self, api_client, customer):
+        authenticate(api_client, customer)
+        response = api_client.get(reverse("worker-chats"))
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+class TestWorkHoursFiltering:
+    def test_booking_only_notifies_workers_within_work_hours(self, api_client, customer, service):
+        from bookings.models import WorkerProfile
+        import datetime
+        user = User.objects.create_user(phone="9000000020", role=User.Role.WORKER)
+        WorkerProfile.objects.create(
+            user=user,
+            skills="Cleaning",
+            rating="4.50",
+            verification_status=WorkerProfile.VerificationStatus.APPROVED,
+            location="Downtown",
+            latitude=12.9716,
+            longitude=77.5946,
+            is_available=True,
+            work_start_time=datetime.time(9, 0),
+            work_end_time=datetime.time(18, 0),
+        )
+        authenticate(api_client, customer)
+        booking_time = timezone.now().replace(hour=2, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        response = api_client.post(
+            reverse("booking-create"),
+            {
+                "service_id": service.id,
+                "location": "221B Baker Street",
+                "latitude": 12.9716,
+                "longitude": 77.5946,
+                "time": booking_time.isoformat(),
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["notified_workers_count"] == 0
+
+    def test_booking_notifies_worker_with_null_work_hours(self, api_client, customer, service):
+        authenticate(api_client, customer)
+        user = User.objects.create_user(phone="9000000021", role=User.Role.WORKER)
+        WorkerProfile.objects.create(
+            user=user,
+            skills="Cleaning",
+            rating="4.50",
+            verification_status=WorkerProfile.VerificationStatus.APPROVED,
+            location="Downtown",
+            latitude=12.9716,
+            longitude=77.5946,
+            is_available=True,
+            work_start_time=None,
+            work_end_time=None,
+        )
+        response = api_client.post(
+            reverse("booking-create"),
+            {
+                "service_id": service.id,
+                "location": "221B Baker Street",
+                "latitude": 12.9716,
+                "longitude": 77.5946,
+                "time": (timezone.now() + timedelta(days=1)).isoformat(),
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["notified_workers_count"] == 1
+
+
+@pytest.mark.django_db
+class TestSubServicesAndOTPCreated:
+    def test_otp_verify_returns_created_flag_true_for_new_user(self, api_client):
+        otp = PhoneOTP.objects.create(
+            phone="9777777777",
+            code="111222",
+            expires_at=timezone.now() + timedelta(minutes=10),
+        )
+        response = api_client.post(
+            reverse("verify-otp"),
+            {"phone": "9777777777", "otp": "111222", "role": User.Role.WORKER},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["created"] is True
+
+    def test_otp_verify_returns_created_flag_false_for_existing_user(self, api_client, customer):
+        otp = PhoneOTP.objects.create(
+            phone=customer.phone,
+            code="333444",
+            expires_at=timezone.now() + timedelta(minutes=10),
+        )
+        response = api_client.post(
+            reverse("verify-otp"),
+            {"phone": customer.phone, "otp": "333444", "role": customer.role},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["created"] is False
+
+    def test_services_include_sub_services(self, api_client, service):
+        from bookings.models import SubService
+        SubService.objects.create(service=service, name="Deep Clean")
+        SubService.objects.create(service=service, name="Regular Clean")
+        response = api_client.get(reverse("service-list"))
+        assert response.status_code == status.HTTP_200_OK
+        service_data = next(s for s in response.data if s["id"] == service.id)
+        assert len(service_data["sub_services"]) == 2
+        sub_names = [s["name"] for s in service_data["sub_services"]]
+        assert "Deep Clean" in sub_names
+
+    def test_worker_can_set_sub_services(self, api_client, worker, service):
+        from bookings.models import SubService, WorkerService
+        sub1 = SubService.objects.create(service=service, name="Deep Clean")
+        sub2 = SubService.objects.create(service=service, name="Regular Clean")
+        authenticate(api_client, worker)
+        response = api_client.patch(
+            reverse("worker-profile-update"),
+            {"sub_service_ids": [sub1.id, sub2.id]},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert WorkerService.objects.filter(worker_profile=worker.worker_profile).count() == 2
