@@ -3,7 +3,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Booking, BookingMessage, BookingNotification, Service, User, WorkerProfile
+from .models import Booking, BookingMessage, BookingNotification, Service, User, WorkerPortfolioImage, WorkerProfile
 from .serializers import (
     BookingCreateSerializer,
     BookingMessageCreateSerializer,
@@ -14,8 +14,12 @@ from .serializers import (
     OTPRequestSerializer,
     OTPVerifySerializer,
     ServiceSerializer,
+    WorkerChatSerializer,
+    WorkerPortfolioImageSerializer,
+    WorkerPortfolioUploadSerializer,
     WorkerProfileDetailsSerializer,
     WorkerProfileSerializer,
+    WorkerProfileUpdateSerializer,
     WorkerVerificationAdminSerializer,
     WorkerVerificationUploadSerializer,
     WorkerBookingAcceptanceSerializer,
@@ -62,7 +66,7 @@ class OTPVerifyAPIView(APIView):
 
 
 class ServiceListAPIView(generics.ListAPIView):
-    queryset = Service.objects.all().order_by("name")
+    queryset = Service.objects.prefetch_related("sub_services").order_by("name")
     serializer_class = ServiceSerializer
     permission_classes = [AllowAnyForAuth]
 
@@ -78,9 +82,36 @@ class NearbyWorkerListAPIView(APIView):
 
 
 class WorkerProfileDetailAPIView(generics.RetrieveAPIView):
-    queryset = WorkerProfile.objects.select_related("user").prefetch_related("portfolio_images", "reviews")
+    queryset = WorkerProfile.objects.select_related("user").prefetch_related("portfolio_images", "reviews", "worker_services__sub_service__service")
     serializer_class = WorkerProfileDetailsSerializer
     permission_classes = [AllowAnyForAuth]
+
+
+class WorkerMeAPIView(APIView):
+    def get(self, request):
+        if request.user.role != User.Role.WORKER:
+            return Response({"detail": "Only workers can access this endpoint."}, status=status.HTTP_403_FORBIDDEN)
+        worker_profile = getattr(request.user, "worker_profile", None)
+        if worker_profile is None:
+            return Response({"detail": "Worker profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = WorkerProfileDetailsSerializer(
+            worker_profile,
+            context={"request": request},
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class WorkerProfileUpdateAPIView(APIView):
+    def patch(self, request):
+        if request.user.role != User.Role.WORKER:
+            return Response({"detail": "Only workers can update their profile."}, status=status.HTTP_403_FORBIDDEN)
+        worker_profile = getattr(request.user, "worker_profile", None)
+        if worker_profile is None:
+            return Response({"detail": "Worker profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = WorkerProfileUpdateSerializer(worker_profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        profile = serializer.save()
+        return Response(WorkerProfileDetailsSerializer(profile, context={"request": request}).data, status=status.HTTP_200_OK)
 
 
 class WorkerVerificationUploadAPIView(APIView):
@@ -107,6 +138,49 @@ class WorkerVerificationAdminAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         profile = serializer.save()
         return Response(WorkerProfileSerializer(profile).data, status=status.HTTP_200_OK)
+
+
+class WorkerPortfolioListCreateAPIView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request):
+        if request.user.role != User.Role.WORKER:
+            return Response({"detail": "Only workers can access portfolio."}, status=status.HTTP_403_FORBIDDEN)
+        worker_profile = getattr(request.user, "worker_profile", None)
+        if worker_profile is None:
+            return Response({"detail": "Worker profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        images = worker_profile.portfolio_images.order_by("-created_at")
+        serializer = WorkerPortfolioImageSerializer(images, many=True, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        if request.user.role != User.Role.WORKER:
+            return Response({"detail": "Only workers can upload portfolio images."}, status=status.HTTP_403_FORBIDDEN)
+        worker_profile = getattr(request.user, "worker_profile", None)
+        if worker_profile is None:
+            return Response({"detail": "Worker profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = WorkerPortfolioUploadSerializer(
+            data=request.data,
+            context={"worker_profile": worker_profile, "request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        image = serializer.save()
+        return Response(
+            WorkerPortfolioImageSerializer(image, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class WorkerPortfolioDeleteAPIView(APIView):
+    def delete(self, request, image_id):
+        if request.user.role != User.Role.WORKER:
+            return Response({"detail": "Only workers can delete portfolio images."}, status=status.HTTP_403_FORBIDDEN)
+        worker_profile = getattr(request.user, "worker_profile", None)
+        if worker_profile is None:
+            return Response({"detail": "Worker profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        image = generics.get_object_or_404(WorkerPortfolioImage, pk=image_id, worker_profile=worker_profile)
+        image.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class BookingCreateAPIView(generics.CreateAPIView):
@@ -136,6 +210,20 @@ class WorkerNotificationListAPIView(generics.ListAPIView):
             .filter(worker=self.request.user)
             .order_by("status", "distance_km", "-created_at")
         )
+
+
+class WorkerChatListAPIView(APIView):
+    def get(self, request):
+        if request.user.role != User.Role.WORKER:
+            return Response({"detail": "Only workers can access chats."}, status=status.HTTP_403_FORBIDDEN)
+        bookings = (
+            Booking.objects.select_related("user", "service")
+            .prefetch_related("messages")
+            .filter(worker=request.user, status__in=[Booking.Status.ACCEPTED, Booking.Status.IN_PROGRESS])
+            .order_by("-updated_at")
+        )
+        serializer = WorkerChatSerializer(bookings, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BookingMessageListCreateAPIView(APIView):
@@ -189,3 +277,5 @@ class WorkerJobRejectionAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         notification = serializer.save()
         return Response(BookingNotificationSerializer(notification).data, status=status.HTTP_200_OK)
+
+

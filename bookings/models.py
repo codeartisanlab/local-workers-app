@@ -67,6 +67,8 @@ class WorkerProfile(models.Model):
         REJECTED = "rejected", "Rejected"
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="worker_profile")
+    full_name = models.CharField(max_length=120, blank=True)
+    bio = models.TextField(blank=True)
     skills = models.TextField(blank=True)
     rating = models.DecimalField(
         max_digits=3,
@@ -83,6 +85,10 @@ class WorkerProfile(models.Model):
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     aadhaar_image = models.FileField(upload_to="aadhaar/", null=True, blank=True)
+    selfie_image = models.FileField(upload_to="selfies/", null=True, blank=True)
+    is_available = models.BooleanField(default=False)
+    work_start_time = models.TimeField(null=True, blank=True)
+    work_end_time = models.TimeField(null=True, blank=True)
 
     def __str__(self):
         return f"WorkerProfile<{self.user.phone}>"
@@ -94,7 +100,8 @@ class WorkerPortfolioImage(models.Model):
         on_delete=models.CASCADE,
         related_name="portfolio_images",
     )
-    image_url = models.URLField()
+    image = models.FileField(upload_to="portfolio/", null=True, blank=True)
+    image_url = models.URLField(blank=True)
     caption = models.CharField(max_length=140, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -127,6 +134,14 @@ class Service(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class SubService(models.Model):
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="sub_services")
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.service.name} - {self.name}"
 
 
 class Booking(models.Model):
@@ -170,6 +185,7 @@ class BookingNotification(models.Model):
     worker = models.ForeignKey(User, on_delete=models.CASCADE, related_name="booking_notifications")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     distance_km = models.DecimalField(max_digits=6, decimal_places=2)
+    expires_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -188,3 +204,14 @@ class BookingMessage(models.Model):
 
     def __str__(self):
         return f"BookingMessage<{self.booking_id}:{self.sender_id}>"
+
+
+class WorkerService(models.Model):
+    worker_profile = models.ForeignKey(WorkerProfile, on_delete=models.CASCADE, related_name="worker_services")
+    sub_service = models.ForeignKey(SubService, on_delete=models.CASCADE, related_name="worker_services")
+
+    class Meta:
+        unique_together = ("worker_profile", "sub_service")
+
+    def __str__(self):
+        return f"WorkerService<{self.worker_profile.user.phone}:{self.sub_service.name}>"
