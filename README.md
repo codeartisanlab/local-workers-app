@@ -5,6 +5,11 @@ Local Workers App contains:
 - a Django REST Framework backend for OTP auth, bookings, worker discovery, and demo data
 - an Expo React Native mobile app for customer and worker flows
 
+## Documentation
+
+- [How to Run](docs/how-to-run.md) — full local development setup guide
+- [Deployment Guide](docs/deployment.md) — local and production server deployment
+
 ## Tech stack
 
 - Backend: Django 4.2, Django REST Framework, Simple JWT, SQLite
