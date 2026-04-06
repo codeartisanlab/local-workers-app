@@ -5,10 +5,10 @@ import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput
 import { PrimaryButton } from "../components/PrimaryButton";
 import { SectionCard } from "../components/SectionCard";
 import { useAuth } from "../context/AuthContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { applyCoupon, createBooking } from "../services/api";
 
-type Props = NativeStackScreenProps<RootStackParamList, "BookingSummary">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "BookingSummary">;
 
 export function BookingSummaryScreen({ route, navigation }: Props) {
   const { worker, service, selectedPackage, slot, date } = route.params;

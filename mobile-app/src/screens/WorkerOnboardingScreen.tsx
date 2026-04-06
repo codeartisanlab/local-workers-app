@@ -3,9 +3,9 @@ import { useState } from "react";
 import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { SectionCard } from "../components/SectionCard";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { WorkerStackParamList } from "../navigation/WorkerNavigator";
 
-type Props = NativeStackScreenProps<RootStackParamList, "WorkerOnboarding">;
+type Props = NativeStackScreenProps<WorkerStackParamList, "WorkerOnboarding">;
 
 const STEPS = ["Basic Info", "Skills", "Documents", "Complete"];
 

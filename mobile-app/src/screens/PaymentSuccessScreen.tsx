@@ -1,9 +1,9 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 
-type Props = NativeStackScreenProps<RootStackParamList, "PaymentSuccess">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "PaymentSuccess">;
 
 export function PaymentSuccessScreen({ route, navigation }: Props) {
   const { bookingId } = route.params;
@@ -17,7 +17,7 @@ export function PaymentSuccessScreen({ route, navigation }: Props) {
         <Text style={styles.title}>Booking Confirmed!</Text>
         <Text style={styles.subtitle}>Your booking #{bookingId} has been placed successfully. A professional will be with you shortly.</Text>
         <Text style={styles.bookingId}>Booking ID: #{bookingId}</Text>
-        <Pressable style={styles.button} onPress={() => navigation.navigate("Home")}>
+        <Pressable style={styles.button} onPress={() => navigation.navigate("CustomerHome")}>
           <Text style={styles.buttonText}>Go to Home</Text>
         </Pressable>
         <Pressable style={styles.trackButton} onPress={() => navigation.navigate("BookingTracking")}>

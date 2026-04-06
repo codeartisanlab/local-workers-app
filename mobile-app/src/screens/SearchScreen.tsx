@@ -3,11 +3,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { SectionCard } from "../components/SectionCard";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { searchServicesAndWorkers } from "../services/api";
 import { SearchResult, ServiceOption, Worker } from "../types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "Search">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "Search">;
 
 const SEARCH_DEBOUNCE_MS = 400;
 

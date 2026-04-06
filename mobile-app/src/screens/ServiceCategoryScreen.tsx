@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
 import { SectionCard } from "../components/SectionCard";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { fetchCategoryServices } from "../services/api";
 import { ServiceWithPackages } from "../types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "ServiceCategory">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "ServiceCategory">;
 
 export function ServiceCategoryScreen({ route, navigation }: Props) {
   const { category } = route.params;

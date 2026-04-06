@@ -2,8 +2,52 @@
 
 Local Workers App contains:
 
-- a Django REST Framework backend for OTP auth, bookings, worker discovery, and demo data
-- an Expo React Native mobile app for customer and worker flows
+- a Django REST Framework backend for OTP auth, bookings, worker discovery, payments, and demo data
+- two separate Expo React Native mobile experiences sharing one codebase:
+  - **Customer App** — browse services, book workers, pay, track, review
+  - **Worker App** — receive jobs, accept/decline, chat, track earnings
+
+## Quick start
+
+| What | Command |
+|---|---|
+| Start backend | `python manage.py runserver` |
+| Start mobile app | `cd mobile-app && npm install && npm start` |
+| Run tests | `python -m pytest bookings/test_api_pytest.py -x -q` |
+
+## 📱 Separate Customer & Worker Apps
+
+Although both apps are served from the **same Expo bundle**, the navigation is fully split by role after login:
+
+```
+Login Screen
+    │
+    ├── role = "customer" ──► CustomerNavigator (warm cream theme)
+    │       Home · Search · ServiceCategory · ServiceDetail
+    │       Workers · Booking · BookingSlots · BookingSummary
+    │       Payment · PaymentSuccess · BookingTracking
+    │       ReviewBooking · OrderHistory · ManageAddresses
+    │       CustomerProfile · CustomerGuide
+    │
+    └── role = "worker"  ──► WorkerNavigator (dark teal theme)
+            WorkerDashboard · WorkerChat
+            WorkerEarnings · WorkerOnboarding · WorkerGuide
+```
+
+### Customer App entry point
+Select **"Customer"** on the login screen, then sign in with phone + OTP.
+
+### Worker App entry point
+Select **"Worker"** on the login screen, then sign in with phone + OTP.
+
+## 📖 User Guides
+
+Step-by-step manuals are included in the `docs/` folder and also available inside each app via the **"How to Use"** menu item:
+
+| Guide | In-app location | Markdown |
+|---|---|---|
+| Customer Guide | Profile tab → "How to Use" | [`docs/CUSTOMER_GUIDE.md`](docs/CUSTOMER_GUIDE.md) |
+| Worker Guide | Guide tab (📖 in bottom bar) | [`docs/WORKER_GUIDE.md`](docs/WORKER_GUIDE.md) |
 
 ## Tech stack
 
@@ -13,10 +57,25 @@ Local Workers App contains:
 
 ## Project structure
 
-- `bookings/`: backend app, APIs, models, tests, seed commands
-- `service_booking_backend/`: Django project settings and URLs
-- `mobile-app/`: Expo mobile client
-- `docker-compose.yml`: backend container setup
+```
+├── bookings/               Django app (APIs, models, tests)
+├── service_booking_backend/ Django project settings & URLs
+├── mobile-app/
+│   └── src/
+│       ├── navigation/
+│       │   ├── AppNavigator.tsx        Top-level role router
+│       │   ├── CustomerNavigator.tsx   All customer screens
+│       │   └── WorkerNavigator.tsx     All worker screens
+│       ├── screens/                    Individual screens
+│       ├── components/
+│       │   ├── FloatingTabBar.tsx      Customer bottom tab
+│       │   └── WorkerTabBar.tsx        Worker bottom tab
+│       └── services/api.ts             API client
+├── docs/
+│   ├── CUSTOMER_GUIDE.md
+│   └── WORKER_GUIDE.md
+└── docker-compose.yml
+```
 
 ## Backend setup
 
@@ -64,9 +123,11 @@ EXPO_PUBLIC_API_BASE_URL=http://192.168.1.10:8000/api
 
 ## Demo accounts
 
-- Customer: `9000000001`, OTP `123456`
-- Worker: `9000000002`, OTP `654321`
-- Admin: `9000000009`, OTP `999999`
+| Role | Phone | OTP |
+|---|---|---|
+| Customer | `9000000001` | `123456` |
+| Worker | `9000000002` | `654321` |
+| Admin | `9000000009` | `999999` |
 
 OTPs are returned in the API response for local development.
 
@@ -75,12 +136,24 @@ OTPs are returned in the API response for local development.
 - `POST /api/auth/request-otp/`
 - `POST /api/auth/verify-otp/`
 - `GET /api/services/`
+- `GET /api/categories/`
+- `GET /api/categories/<id>/services/`
 - `GET /api/workers/nearby/`
 - `GET /api/workers/<id>/`
+- `GET /api/workers/<id>/slots/?date=YYYY-MM-DD`
 - `GET /api/worker/jobs/`
+- `GET /api/worker/earnings/`
 - `POST /api/bookings/`
+- `POST /api/bookings/<id>/cancel/`
+- `POST /api/bookings/<id>/reschedule/`
+- `POST /api/bookings/<id>/review/`
 - `POST /api/bookings/accept/`
 - `POST /api/bookings/reject/`
+- `POST /api/payments/create-order/`
+- `POST /api/payments/verify/`
+- `POST /api/coupons/apply/`
+- `GET /api/search/?q=`
+- `GET /api/health/`
 
 ## Example flow
 

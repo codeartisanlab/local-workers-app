@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import { Alert, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
 import { SectionCard } from "../components/SectionCard";
+import { WorkerTabBar } from "../components/WorkerTabBar";
 import { useAuth } from "../context/AuthContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { WorkerStackParamList } from "../navigation/WorkerNavigator";
 import { acceptJob, fetchWorkerJobs, rejectJob } from "../services/api";
 import { BookingJob } from "../types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "WorkerDashboard">;
+type Props = NativeStackScreenProps<WorkerStackParamList, "WorkerDashboard">;
 
 export function WorkerDashboardScreen({ navigation }: Props) {
   const { accessToken } = useAuth();
@@ -125,7 +126,7 @@ export function WorkerDashboardScreen({ navigation }: Props) {
               <Pressable
                 style={styles.chatButton}
                 onPress={() =>
-                  navigation.navigate("BookingChat", {
+                  navigation.navigate("WorkerChat", {
                     bookingId: item.bookingId,
                     workerName: item.customerName,
                   })
@@ -141,6 +142,7 @@ export function WorkerDashboardScreen({ navigation }: Props) {
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
+      <WorkerTabBar activeTab="dashboard" />
     </SafeAreaView>
   );
 }
@@ -163,11 +165,11 @@ const badgeStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f4f1ea",
+    backgroundColor: "#1a2e2a",
   },
   content: {
     padding: 20,
-    paddingBottom: 36,
+    paddingBottom: 120,
   },
   header: {
     marginBottom: 22,
@@ -185,7 +187,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#f0e2d2",
+    backgroundColor: "rgba(47,108,98,0.3)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -198,19 +200,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  onlineToggleOn: { backgroundColor: "#d9efe3" },
-  onlineToggleOff: { backgroundColor: "#f6d6d4" },
-  onlineToggleText: { color: "#231f1c", fontWeight: "800", fontSize: 16 },
-  onlineToggleSub: { color: "#75685e", fontSize: 13 },
+  onlineToggleOn: { backgroundColor: "rgba(47,108,98,0.35)" },
+  onlineToggleOff: { backgroundColor: "rgba(180,60,40,0.25)" },
+  onlineToggleText: { color: "#fffdf8", fontWeight: "800", fontSize: 16 },
+  onlineToggleSub: { color: "#9ebfbb", fontSize: 13 },
   heading: {
-    color: "#231f1c",
+    color: "#fffdf8",
     fontSize: 30,
     lineHeight: 36,
     fontWeight: "800",
     marginBottom: 8,
   },
   subheading: {
-    color: "#75685e",
+    color: "#9ebfbb",
     lineHeight: 22,
   },
   serviceName: {

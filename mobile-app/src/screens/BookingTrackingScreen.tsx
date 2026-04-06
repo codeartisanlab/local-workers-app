@@ -7,10 +7,10 @@ import { LocationBar } from "../components/LocationBar";
 import { SectionCard } from "../components/SectionCard";
 import { useAuth } from "../context/AuthContext";
 import { useCustomerBookings } from "../context/CustomerBookingContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { cancelBooking } from "../services/api";
 
-type Props = NativeStackScreenProps<RootStackParamList, "BookingTracking">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "BookingTracking">;
 
 function ChatGlyph() {
   return (

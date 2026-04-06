@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
 import { SectionCard } from "../components/SectionCard";
+import { WorkerTabBar } from "../components/WorkerTabBar";
 import { useAuth } from "../context/AuthContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { WorkerStackParamList } from "../navigation/WorkerNavigator";
 import { fetchWorkerEarnings } from "../services/api";
 import { WorkerEarning } from "../types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "WorkerEarnings">;
+type Props = NativeStackScreenProps<WorkerStackParamList, "WorkerEarnings">;
 
 export function WorkerEarningsScreen({}: Props) {
   const { accessToken } = useAuth();
@@ -71,33 +72,34 @@ export function WorkerEarningsScreen({}: Props) {
         ItemSeparatorComponent={() => <View style={styles.sep} />}
         ListEmptyComponent={
           loading ? (
-            <ActivityIndicator color="#ca6b2c" style={styles.loader} />
+            <ActivityIndicator color="#6ecfc2" style={styles.loader} />
           ) : (
             <Text style={styles.empty}>No earnings yet.</Text>
           )
         }
       />
+      <WorkerTabBar activeTab="earnings" />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#f4f1ea" },
-  content: { padding: 20, paddingBottom: 40 },
+  safeArea: { flex: 1, backgroundColor: "#1a2e2a" },
+  content: { padding: 20, paddingBottom: 120 },
   summaryRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
   summaryCard: {
     flex: 1,
-    backgroundColor: "#fffdf8",
+    backgroundColor: "#1e3830",
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#eadfce",
+    borderColor: "#2f6c62",
     alignItems: "center",
   },
-  summaryValue: { color: "#231f1c", fontSize: 22, fontWeight: "800" },
-  pendingValue: { color: "#ca6b2c" },
-  summaryLabel: { color: "#75685e", fontSize: 12, marginTop: 2 },
-  sectionTitle: { color: "#231f1c", fontSize: 18, fontWeight: "800", marginBottom: 12 },
+  summaryValue: { color: "#fffdf8", fontSize: 22, fontWeight: "800" },
+  pendingValue: { color: "#6ecfc2" },
+  summaryLabel: { color: "#9ebfbb", fontSize: 12, marginTop: 2 },
+  sectionTitle: { color: "#fffdf8", fontSize: 18, fontWeight: "800", marginBottom: 12 },
   row: { flexDirection: "row", justifyContent: "space-between" },
   info: { flex: 1 },
   bookingId: { color: "#231f1c", fontWeight: "700", marginBottom: 4 },
@@ -110,5 +112,5 @@ const styles = StyleSheet.create({
   badgeText: { color: "#4e433a", fontSize: 12, fontWeight: "700", textTransform: "capitalize" },
   sep: { height: 10 },
   loader: { marginTop: 40 },
-  empty: { textAlign: "center", color: "#75685e", marginTop: 40 },
+  empty: { textAlign: "center", color: "#9ebfbb", marginTop: 40 },
 });

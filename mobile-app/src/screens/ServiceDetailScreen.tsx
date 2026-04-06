@@ -4,10 +4,10 @@ import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "rea
 
 import { PrimaryButton } from "../components/PrimaryButton";
 import { SectionCard } from "../components/SectionCard";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { ServicePackage } from "../types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "ServiceDetail">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "ServiceDetail">;
 
 export function ServiceDetailScreen({ route, navigation }: Props) {
   const { service } = route.params;

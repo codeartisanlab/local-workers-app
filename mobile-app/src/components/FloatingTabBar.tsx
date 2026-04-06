@@ -45,7 +45,7 @@ export function FloatingTabBar({ activeTab }: FloatingTabBarProps) {
   return (
     <View pointerEvents="box-none" style={[styles.container, { bottom: Math.max(insets.bottom + 10, 22) }]}>
       <View style={styles.bar}>
-        <Pressable style={styles.tabButton} onPress={() => navigation.navigate("Home")}>
+        <Pressable style={styles.tabButton} onPress={() => navigation.navigate("CustomerHome")}>
           <View style={[styles.iconPad, activeTab === "home" && styles.iconPadActive]}>
             <HomeIcon active={activeTab === "home"} />
           </View>

@@ -6,9 +6,9 @@ import { LocationBar } from "../components/LocationBar";
 import { SectionCard } from "../components/SectionCard";
 import { useAuth } from "../context/AuthContext";
 import { useCustomerBookings } from "../context/CustomerBookingContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 
-type Props = NativeStackScreenProps<RootStackParamList, "CustomerProfile">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "CustomerProfile">;
 
 function ArrowIcon() {
   return (
@@ -84,6 +84,16 @@ export function CustomerProfileScreen({ navigation }: Props) {
             </Pressable>
           </View>
           <Text style={styles.meta}>See all placed, active, and completed bookings.</Text>
+        </SectionCard>
+
+        <SectionCard>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>📖 How to Use</Text>
+            <Pressable style={styles.iconButton} onPress={() => navigation.navigate("CustomerGuide")}>
+              <ArrowIcon />
+            </Pressable>
+          </View>
+          <Text style={styles.meta}>Step-by-step guide for customers.</Text>
         </SectionCard>
       </ScrollView>
       <FloatingTabBar activeTab="profile" />

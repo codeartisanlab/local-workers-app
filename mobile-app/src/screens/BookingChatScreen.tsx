@@ -5,11 +5,11 @@ import { FlatList, SafeAreaView, StyleSheet, Text, TextInput, View } from "react
 import { PrimaryButton } from "../components/PrimaryButton";
 import { SectionCard } from "../components/SectionCard";
 import { useAuth } from "../context/AuthContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { fetchBookingMessages, sendBookingMessage } from "../services/api";
 import { BookingMessage } from "../types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "BookingChat">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "BookingChat">;
 
 export function BookingChatScreen({ route }: Props) {
   const { bookingId, workerName } = route.params;

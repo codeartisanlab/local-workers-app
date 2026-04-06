@@ -14,11 +14,11 @@ import {
 import { FloatingTabBar } from "../components/FloatingTabBar";
 import { LocationBar } from "../components/LocationBar";
 import { useAuth } from "../context/AuthContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { fetchCategories, fetchServices } from "../services/api";
 import { ServiceCategory, ServiceOption } from "../types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "Home">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "CustomerHome">;
 
 function ServiceGlyph({ label, active }: { label: string; active: boolean }) {
   const tone = active ? "#fffdf8" : "#ca6b2c";

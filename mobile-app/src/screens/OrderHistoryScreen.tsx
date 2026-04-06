@@ -5,9 +5,9 @@ import { FloatingTabBar } from "../components/FloatingTabBar";
 import { LocationBar } from "../components/LocationBar";
 import { SectionCard } from "../components/SectionCard";
 import { useCustomerBookings } from "../context/CustomerBookingContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 
-type Props = NativeStackScreenProps<RootStackParamList, "OrderHistory">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "OrderHistory">;
 
 export function OrderHistoryScreen({}: Props) {
   const { orderHistory } = useCustomerBookings();

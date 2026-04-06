@@ -4,11 +4,11 @@ import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StyleShe
 
 import { SectionCard } from "../components/SectionCard";
 import { useAuth } from "../context/AuthContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { createPaymentOrder, verifyPayment } from "../services/api";
 import { PaymentMethod } from "../types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "Payment">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "Payment">;
 
 const METHODS: { key: PaymentMethod; label: string; icon: string }[] = [
   { key: "upi", label: "UPI", icon: "📱" },

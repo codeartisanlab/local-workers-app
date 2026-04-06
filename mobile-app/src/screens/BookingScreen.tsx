@@ -13,11 +13,11 @@ import {
 } from "react-native";
 
 import { SectionCard } from "../components/SectionCard";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { fetchWorkerDetails } from "../services/api";
 import { WorkerDetails } from "../types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "Booking">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "Booking">;
 
 function ChatIcon() {
   return (

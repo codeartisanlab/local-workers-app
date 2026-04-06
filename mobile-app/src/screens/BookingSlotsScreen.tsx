@@ -6,10 +6,10 @@ import { PrimaryButton } from "../components/PrimaryButton";
 import { SectionCard } from "../components/SectionCard";
 import { useAuth } from "../context/AuthContext";
 import { useCustomerBookings } from "../context/CustomerBookingContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { createBooking } from "../services/api";
 
-type Props = NativeStackScreenProps<RootStackParamList, "BookingSlots">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "BookingSlots">;
 
 function getAvailableSlots(workerId: number) {
   const slotMap: Record<number, string[]> = {

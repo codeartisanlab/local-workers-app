@@ -4,11 +4,11 @@ import { Alert, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from
 
 import { SectionCard } from "../components/SectionCard";
 import { useAuth } from "../context/AuthContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { fetchAddresses } from "../services/api";
 import { CustomerAddress } from "../types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "ManageAddresses">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "ManageAddresses">;
 
 export function ManageAddressesScreen({}: Props) {
   const { accessToken } = useAuth();

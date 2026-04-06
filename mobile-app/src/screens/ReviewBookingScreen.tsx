@@ -4,10 +4,10 @@ import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput
 
 import { SectionCard } from "../components/SectionCard";
 import { useAuth } from "../context/AuthContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { submitReview } from "../services/api";
 
-type Props = NativeStackScreenProps<RootStackParamList, "ReviewBooking">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "ReviewBooking">;
 
 const REVIEW_TAGS = ["Punctual", "Professional", "Skilled", "Friendly", "Clean"];
 
@@ -35,7 +35,7 @@ export function ReviewBookingScreen({ route, navigation }: Props) {
     try {
       await submitReview(accessToken, bookingId, rating, comment, wouldRecommend, selectedTags);
       Alert.alert("Review submitted", "Thank you for your feedback!", [
-        { text: "OK", onPress: () => navigation.navigate("Home") },
+        { text: "OK", onPress: () => navigation.navigate("CustomerHome") },
       ]);
     } catch (error) {
       Alert.alert("Error", error instanceof Error ? error.message : "Try again.");

@@ -5,11 +5,11 @@ import { ActivityIndicator, FlatList, Image, Pressable, SafeAreaView, StyleSheet
 import { FloatingTabBar } from "../components/FloatingTabBar";
 import { LocationBar } from "../components/LocationBar";
 import { useLocationState } from "../context/LocationContext";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { CustomerStackParamList } from "../navigation/CustomerNavigator";
 import { fetchNearbyWorkers } from "../services/api";
 import { Worker } from "../types";
 
-type Props = NativeStackScreenProps<RootStackParamList, "Workers">;
+type Props = NativeStackScreenProps<CustomerStackParamList, "Workers">;
 
 function StarIcon() {
   return (
