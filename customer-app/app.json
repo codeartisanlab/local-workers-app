@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Service Booking - Customer",
+    "slug": "service-booking-customer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#f4f1ea"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.servicebookingcustomer"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#f4f1ea"
+      },
+      "package": "com.anonymous.servicebookingcustomer"
+    }
+  }
+}
