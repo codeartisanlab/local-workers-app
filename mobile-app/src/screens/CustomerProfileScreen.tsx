@@ -68,6 +68,16 @@ export function CustomerProfileScreen({ navigation }: Props) {
 
         <SectionCard>
           <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>My Addresses</Text>
+            <Pressable style={styles.iconButton} onPress={() => navigation.navigate("ManageAddresses")}>
+              <ArrowIcon />
+            </Pressable>
+          </View>
+          <Text style={styles.meta}>Manage saved addresses for quick booking.</Text>
+        </SectionCard>
+
+        <SectionCard>
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Order History</Text>
             <Pressable style={styles.iconButton} onPress={() => navigation.navigate("OrderHistory")}>
               <ArrowIcon />

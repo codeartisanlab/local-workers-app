@@ -1,4 +1,19 @@
-import { AuthUser, BookingJob, BookingMessage, Role, ServiceOption, Worker, WorkerDetails } from "../types";
+import {
+  AuthUser,
+  BookingJob,
+  BookingMessage,
+  CustomerAddress,
+  PaymentMethod,
+  Role,
+  SearchResult,
+  ServiceCategory,
+  ServiceOption,
+  ServiceWithPackages,
+  Worker,
+  WorkerDetails,
+  WorkerEarning,
+  WorkerSlot,
+} from "../types";
 
 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api").replace(/\/$/, "");
 
@@ -494,5 +509,277 @@ export async function rejectJob(accessToken: string, notificationId: number) {
       offline: true,
       message: error instanceof Error ? error.message : "Backend unavailable",
     };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 1 – Service Categories
+// ---------------------------------------------------------------------------
+
+const mockCategories: ServiceCategory[] = [
+  { id: 1, name: "Home Cleaning", description: "Professional cleaning services", icon: "🧹", parent_id: null, is_active: true, order: 0 },
+  { id: 2, name: "Plumbing", description: "Pipe and water services", icon: "🔧", parent_id: null, is_active: true, order: 1 },
+  { id: 3, name: "Electrical", description: "Wiring and electrical repairs", icon: "⚡", parent_id: null, is_active: true, order: 2 },
+  { id: 4, name: "Pest Control", description: "Pest and insect treatment", icon: "🐛", parent_id: null, is_active: true, order: 3 },
+  { id: 5, name: "Painting", description: "Interior and exterior painting", icon: "🎨", parent_id: null, is_active: true, order: 4 },
+  { id: 6, name: "Carpentry", description: "Furniture and wood work", icon: "🪚", parent_id: null, is_active: true, order: 5 },
+];
+
+export async function fetchCategories(): Promise<ServiceCategory[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/categories/`);
+    return await parseResponse<ServiceCategory[]>(response);
+  } catch {
+    return mockCategories;
+  }
+}
+
+export async function fetchCategoryServices(categoryId: number): Promise<ServiceWithPackages[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/categories/${categoryId}/services/`);
+    return await parseResponse<ServiceWithPackages[]>(response);
+  } catch {
+    const cat = mockCategories.find((c) => c.id === categoryId);
+    return [
+      {
+        id: categoryId,
+        name: cat?.name ?? "Service",
+        base_price: 499,
+        description: "Professional service by verified experts.",
+        duration_hours: 2,
+        included_items: ["Equipment", "Cleaning products"],
+        excluded_items: ["Heavy furniture moving"],
+        packages: [
+          { id: 1, name: "Basic", description: "1 room clean", price: 499, duration_hours: 1.5, included_items: ["Standard clean"], is_popular: false, order: 0 },
+          { id: 2, name: "Standard", description: "Full home clean", price: 899, duration_hours: 3, included_items: ["Deep clean", "Kitchen"], is_popular: true, order: 1 },
+          { id: 3, name: "Premium", description: "Deep clean + sanitize", price: 1499, duration_hours: 5, included_items: ["Deep clean", "Sanitization", "Bathroom"], is_popular: false, order: 2 },
+        ],
+      },
+    ];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2 – Worker Slots & Addresses
+// ---------------------------------------------------------------------------
+
+export async function fetchWorkerSlots(workerId: number, date: string): Promise<WorkerSlot[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/workers/${workerId}/slots/?date=${date}`);
+    return await parseResponse<WorkerSlot[]>(response);
+  } catch {
+    return [
+      { start_time: "09:00", end_time: "10:00" },
+      { start_time: "11:00", end_time: "12:00" },
+      { start_time: "14:00", end_time: "15:00" },
+      { start_time: "16:00", end_time: "17:00" },
+    ];
+  }
+}
+
+const mockAddresses: CustomerAddress[] = [
+  { id: 1, label: "Home", address: "221B Baker Street, Indiranagar, Bangalore", latitude: 12.9716, longitude: 77.5946, is_default: true },
+  { id: 2, label: "Work", address: "UB City, Vittal Mallya Road, Bangalore", latitude: 12.9719, longitude: 77.5937, is_default: false },
+];
+
+export async function fetchAddresses(accessToken: string): Promise<CustomerAddress[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/addresses/`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    return await parseResponse<CustomerAddress[]>(response);
+  } catch {
+    return mockAddresses;
+  }
+}
+
+export async function cancelBooking(accessToken: string, bookingId: number, reason?: string): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ reason: reason ?? "" }),
+    });
+  } catch {
+    // mock success
+  }
+}
+
+export async function rescheduleBooking(accessToken: string, bookingId: number, newTime: string): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/reschedule/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ new_time: newTime }),
+    });
+    await parseResponse(response);
+  } catch {
+    // mock success
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3 – Payments
+// ---------------------------------------------------------------------------
+
+export async function createPaymentOrder(
+  accessToken: string,
+  bookingId: number,
+  method: PaymentMethod,
+): Promise<{ order_id: string; amount: number; key: string }> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/payments/create-order/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ booking_id: bookingId, method }),
+    });
+    return await parseResponse(response);
+  } catch {
+    return { order_id: `mock_order_${bookingId}`, amount: 499, key: "rzp_test_mock" };
+  }
+}
+
+export async function verifyPayment(
+  accessToken: string,
+  bookingId: number,
+  gatewayPaymentId: string,
+  gatewayOrderId: string,
+  method: PaymentMethod,
+): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/payments/verify/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ booking_id: bookingId, gateway_payment_id: gatewayPaymentId, gateway_order_id: gatewayOrderId, method }),
+    });
+    await parseResponse(response);
+  } catch {
+    // mock success
+  }
+}
+
+// Phase 3 – Worker Earnings
+
+const mockEarnings: WorkerEarning[] = [
+  { id: 1, booking: 101, gross_amount: "899.00", platform_commission_percent: "15.00", net_amount: "764.15", payout_status: "paid" },
+  { id: 2, booking: 102, gross_amount: "499.00", platform_commission_percent: "15.00", net_amount: "424.15", payout_status: "pending" },
+];
+
+export async function fetchWorkerEarnings(accessToken: string): Promise<WorkerEarning[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/worker/earnings/`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const data = await parseResponse<{ transactions: WorkerEarning[] }>(response);
+    return data.transactions;
+  } catch {
+    return mockEarnings;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4 – FCM Token & Location
+// ---------------------------------------------------------------------------
+
+export async function registerFCMToken(accessToken: string, token: string, deviceType: "android" | "ios"): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/users/fcm-token/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ token, device_type: deviceType }),
+    });
+  } catch {
+    // mock success
+  }
+}
+
+export async function updateWorkerLocation(accessToken: string, latitude: number, longitude: number): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/worker/location/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ latitude, longitude }),
+    });
+  } catch {
+    // mock success
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5 – Review
+// ---------------------------------------------------------------------------
+
+export async function submitReview(
+  accessToken: string,
+  bookingId: number,
+  rating: number,
+  comment: string,
+  wouldRecommend: boolean,
+  tags: string[],
+): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/review/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ rating, comment, would_recommend: wouldRecommend, tags }),
+    });
+    await parseResponse(response);
+  } catch {
+    // mock success
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 6 – Search & Coupons
+// ---------------------------------------------------------------------------
+
+export async function searchServicesAndWorkers(query: string): Promise<SearchResult> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/search/?q=${encodeURIComponent(query)}`);
+    return await parseResponse<SearchResult>(response);
+  } catch {
+    return {
+      services: servicesFallback.filter((s) => s.name.toLowerCase().includes(query.toLowerCase())),
+      workers: nearbyWorkers.filter((w) => w.skills.some((sk) => sk.toLowerCase().includes(query.toLowerCase()))),
+    };
+  }
+}
+
+export async function applyCoupon(
+  accessToken: string,
+  code: string,
+  bookingPrice: number,
+): Promise<{ discount_amount: number; final_amount: number }> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/coupons/apply/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ code: code.toUpperCase(), booking_price: bookingPrice }),
+    });
+    const data = await parseResponse<{ discount_amount: number }>(response);
+    return { discount_amount: data.discount_amount, final_amount: bookingPrice - data.discount_amount };
+  } catch (error) {
+    if (code.toUpperCase() === "FIRST50") {
+      const discount = Math.min(50, bookingPrice);
+      return { discount_amount: discount, final_amount: bookingPrice - discount };
+    }
+    throw new Error("Invalid coupon code.");
+  }
+}
+
+export async function createDispute(
+  accessToken: string,
+  bookingId: number,
+  reason: string,
+  description: string,
+): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/disputes/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ booking: bookingId, reason, description }),
+    });
+  } catch {
+    // mock success
   }
 }

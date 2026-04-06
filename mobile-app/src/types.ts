@@ -24,6 +24,68 @@ export type ServiceOption = {
   name: string;
 };
 
+export type ServicePackage = {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  duration_hours: number;
+  included_items: string[];
+  is_popular: boolean;
+  order: number;
+};
+
+export type ServiceWithPackages = ServiceOption & {
+  description: string;
+  duration_hours: number;
+  image_url?: string;
+  included_items: string[];
+  excluded_items: string[];
+  packages: ServicePackage[];
+};
+
+export type ServiceCategory = {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  parent_id: number | null;
+  is_active: boolean;
+  order: number;
+  subcategories?: ServiceCategory[];
+  services?: ServiceWithPackages[];
+};
+
+export type CustomerAddress = {
+  id: number;
+  label: "Home" | "Work" | "Other";
+  address: string;
+  latitude: number;
+  longitude: number;
+  is_default: boolean;
+};
+
+export type WorkerSlot = {
+  start_time: string;
+  end_time: string;
+};
+
+export type PaymentMethod = "card" | "upi" | "wallet" | "cash";
+
+export type WorkerEarning = {
+  id: number;
+  booking: number;
+  gross_amount: string;
+  platform_commission_percent: string;
+  net_amount: string;
+  payout_status: "pending" | "paid";
+};
+
+export type SearchResult = {
+  services: ServiceOption[];
+  workers: Worker[];
+};
+
 export type WorkerPortfolioImage = {
   id: number;
   imageUrl: string;

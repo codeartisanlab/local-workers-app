@@ -1,13 +1,22 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { FloatingTabBar } from "../components/FloatingTabBar";
 import { LocationBar } from "../components/LocationBar";
 import { useAuth } from "../context/AuthContext";
 import { RootStackParamList } from "../navigation/AppNavigator";
-import { fetchServices } from "../services/api";
-import { ServiceOption } from "../types";
+import { fetchCategories, fetchServices } from "../services/api";
+import { ServiceCategory, ServiceOption } from "../types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
@@ -44,11 +53,15 @@ function ServiceGlyph({ label, active }: { label: string; active: boolean }) {
 export function HomeScreen({ navigation }: Props) {
   const { user } = useAuth();
   const [services, setServices] = useState<ServiceOption[]>([]);
+  const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchServices()
-      .then(setServices)
+    Promise.all([fetchServices(), fetchCategories()])
+      .then(([svcs, cats]) => {
+        setServices(svcs);
+        setCategories(cats);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -64,6 +77,11 @@ export function HomeScreen({ navigation }: Props) {
         ListHeaderComponent={
           <View style={styles.header}>
             <LocationBar />
+            {/* Search bar */}
+            <Pressable style={styles.searchBar} onPress={() => navigation.navigate("Search")}>
+              <Text style={styles.searchIcon}>🔍</Text>
+              <Text style={styles.searchPlaceholder}>Search services, plumbers, cleaners…</Text>
+            </Pressable>
             <View>
               <Text style={styles.welcome}>Hello, {user?.phone}</Text>
               <Text style={styles.heading} testID="home-heading">
@@ -71,6 +89,24 @@ export function HomeScreen({ navigation }: Props) {
               </Text>
               <Text style={styles.subheading}>Find nearby pros around your selected location.</Text>
             </View>
+            {/* Category horizontal scroll */}
+            {categories.length > 0 && (
+              <View style={styles.categoriesSection}>
+                <Text style={styles.categoriesTitle}>Browse Categories</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
+                  {categories.map((cat) => (
+                    <Pressable
+                      key={cat.id}
+                      style={styles.categoryChip}
+                      onPress={() => navigation.navigate("ServiceCategory", { category: cat })}
+                    >
+                      <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                      <Text style={styles.categoryName}>{cat.name}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
           </View>
         }
         renderItem={({ item }) => (
@@ -110,6 +146,18 @@ const styles = StyleSheet.create({
     gap: 18,
     marginBottom: 22,
   },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fffdf8",
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#eadfce",
+    gap: 10,
+  },
+  searchIcon: { fontSize: 16 },
+  searchPlaceholder: { color: "#a89888", fontSize: 14, flex: 1 },
   welcome: {
     color: "#7d6f63",
     fontSize: 14,
@@ -127,6 +175,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  categoriesSection: { marginTop: 4 },
+  categoriesTitle: {
+    color: "#231f1c",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  categoriesScroll: { gap: 10, paddingRight: 4 },
+  categoryChip: {
+    alignItems: "center",
+    backgroundColor: "#fffdf8",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#eadfce",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minWidth: 80,
+  },
+  categoryIcon: { fontSize: 24, marginBottom: 4 },
+  categoryName: { color: "#231f1c", fontSize: 12, fontWeight: "600", textAlign: "center" },
   column: {
     justifyContent: "space-between",
     marginBottom: 14,

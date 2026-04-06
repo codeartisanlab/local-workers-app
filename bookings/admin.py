@@ -2,22 +2,60 @@ from django.contrib import admin
 
 from .models import (
     Booking,
+    BlockedSlot,
     BookingMessage,
     BookingNotification,
+    CancellationPolicy,
+    Coupon,
+    CouponUse,
+    CustomerAddress,
+    Dispute,
+    FCMToken,
+    Payment,
     PhoneOTP,
+    PricingRule,
     Service,
+    ServiceCategory,
+    ServicePackage,
+    ServiceView,
+    Skill,
     User,
+    WorkerAvailability,
+    WorkerBankAccount,
+    WorkerCertification,
+    WorkerEarning,
+    WorkerLocationUpdate,
     WorkerPortfolioImage,
     WorkerProfile,
     WorkerReview,
+    WorkerSkill,
 )
 
 admin.site.register(User)
 admin.site.register(PhoneOTP)
 admin.site.register(WorkerProfile)
+admin.site.register(WorkerPortfolioImage)
+admin.site.register(WorkerReview)
+admin.site.register(WorkerSkill)
+admin.site.register(WorkerCertification)
+admin.site.register(WorkerAvailability)
+admin.site.register(WorkerBankAccount)
+admin.site.register(WorkerEarning)
+admin.site.register(WorkerLocationUpdate)
+admin.site.register(ServiceCategory)
 admin.site.register(Service)
+admin.site.register(ServicePackage)
+admin.site.register(PricingRule)
+admin.site.register(Skill)
 admin.site.register(Booking)
 admin.site.register(BookingNotification)
 admin.site.register(BookingMessage)
-admin.site.register(WorkerPortfolioImage)
-admin.site.register(WorkerReview)
+admin.site.register(BlockedSlot)
+admin.site.register(CancellationPolicy)
+admin.site.register(CustomerAddress)
+admin.site.register(Payment)
+admin.site.register(FCMToken)
+admin.site.register(Coupon)
+admin.site.register(CouponUse)
+admin.site.register(ServiceView)
+admin.site.register(Dispute)

@@ -1,11 +1,14 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { Alert } from "react-native";
 import { SafeAreaView, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 
 import { FloatingTabBar } from "../components/FloatingTabBar";
 import { LocationBar } from "../components/LocationBar";
 import { SectionCard } from "../components/SectionCard";
+import { useAuth } from "../context/AuthContext";
 import { useCustomerBookings } from "../context/CustomerBookingContext";
 import { RootStackParamList } from "../navigation/AppNavigator";
+import { cancelBooking } from "../services/api";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingTracking">;
 
@@ -20,6 +23,22 @@ function ChatGlyph() {
 
 export function BookingTrackingScreen({ navigation }: Props) {
   const { currentBooking } = useCustomerBookings();
+  const { accessToken } = useAuth();
+
+  async function handleCancel() {
+    if (!currentBooking || !accessToken) return;
+    Alert.alert("Cancel Booking", "Are you sure you want to cancel?", [
+      { text: "No", style: "cancel" },
+      {
+        text: "Yes, Cancel",
+        style: "destructive",
+        onPress: async () => {
+          await cancelBooking(accessToken, currentBooking.id, "Customer cancelled");
+          Alert.alert("Cancelled", "Your booking has been cancelled.");
+        },
+      },
+    ]);
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -86,6 +105,26 @@ export function BookingTrackingScreen({ navigation }: Props) {
             ))}
           </SectionCard>
         ) : null}
+
+        {currentBooking && currentBooking.status === "completed" && (
+          <Pressable
+            style={styles.reviewButton}
+            onPress={() =>
+              navigation.navigate("ReviewBooking", {
+                bookingId: currentBooking.id,
+                workerName: currentBooking.workerName,
+              })
+            }
+          >
+            <Text style={styles.reviewButtonText}>⭐ Leave a Review</Text>
+          </Pressable>
+        )}
+
+        {currentBooking && (currentBooking.status === "searching" || currentBooking.status === "assigned") && (
+          <Pressable style={styles.cancelButton} onPress={handleCancel}>
+            <Text style={styles.cancelButtonText}>Cancel Booking</Text>
+          </Pressable>
+        )}
       </ScrollView>
       <FloatingTabBar activeTab="orders" />
     </SafeAreaView>
@@ -168,6 +207,29 @@ const styles = StyleSheet.create({
   },
   stepMeta: {
     color: "#75685e",
+  },
+  reviewButton: {
+    backgroundColor: "#2f6c62",
+    borderRadius: 18,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  reviewButtonText: {
+    color: "#fffdf8",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  cancelButton: {
+    borderRadius: 18,
+    paddingVertical: 14,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#b24a3a",
+  },
+  cancelButtonText: {
+    color: "#b24a3a",
+    fontSize: 15,
+    fontWeight: "700",
   },
 });
 

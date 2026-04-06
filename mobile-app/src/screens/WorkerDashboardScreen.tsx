@@ -13,6 +13,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "WorkerDashboard">;
 export function WorkerDashboardScreen({ navigation }: Props) {
   const { accessToken } = useAuth();
   const [jobs, setJobs] = useState<BookingJob[]>([]);
+  const [isOnline, setIsOnline] = useState(false);
 
   useEffect(() => {
     if (!accessToken) {
@@ -68,10 +69,24 @@ export function WorkerDashboardScreen({ navigation }: Props) {
         keyExtractor={(item) => String(item.id)}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.heading} testID="worker-dashboard-heading">
-              Incoming jobs and active work
-            </Text>
-            <Text style={styles.subheading}>Accept jobs quickly or clear ones you cannot take.</Text>
+            <View style={styles.headerTop}>
+              <View style={styles.headerTitles}>
+                <Text style={styles.heading} testID="worker-dashboard-heading">
+                  Incoming jobs and active work
+                </Text>
+                <Text style={styles.subheading}>Accept jobs quickly or clear ones you cannot take.</Text>
+              </View>
+              <Pressable style={styles.earningsBtn} onPress={() => navigation.navigate("WorkerEarnings")}>
+                <Text style={styles.earningsBtnText}>💰</Text>
+              </Pressable>
+            </View>
+            <Pressable
+              style={[styles.onlineToggle, isOnline ? styles.onlineToggleOn : styles.onlineToggleOff]}
+              onPress={() => setIsOnline((v) => !v)}
+            >
+              <Text style={styles.onlineToggleText}>{isOnline ? "🟢 Online" : "🔴 Offline"}</Text>
+              <Text style={styles.onlineToggleSub}>{isOnline ? "Accepting jobs" : "Not accepting jobs"}</Text>
+            </Pressable>
           </View>
         }
         renderItem={({ item, index }) => (
@@ -156,7 +171,37 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 22,
+    gap: 14,
   },
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  headerTitles: {
+    flex: 1,
+  },
+  earningsBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#f0e2d2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  earningsBtnText: { fontSize: 20 },
+  onlineToggle: {
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  onlineToggleOn: { backgroundColor: "#d9efe3" },
+  onlineToggleOff: { backgroundColor: "#f6d6d4" },
+  onlineToggleText: { color: "#231f1c", fontWeight: "800", fontSize: 16 },
+  onlineToggleSub: { color: "#75685e", fontSize: 13 },
   heading: {
     color: "#231f1c",
     fontSize: 30,
